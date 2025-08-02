@@ -17,7 +17,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly jwt: JwtService,
-  ) {}
+  ) { }
 
   async signup(dto: SignupDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
@@ -25,7 +25,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const emailToken = randomUUID();
-    const emailTokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const emailTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.user.create({
       data: {
@@ -36,7 +36,11 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendVerificationEmail(dto.email, emailToken);
+    try {
+      await this.emailService.sendVerificationEmail(dto.email, emailToken);
+    } catch (error) {
+      console.error('Email sending failed:', error.message || error);
+    }
     return { message: 'Verification email sent' };
   }
 
@@ -80,7 +84,7 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const resetToken = randomUUID();
-    const resetTokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const resetTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.user.update({
       where: { id: user.id },
